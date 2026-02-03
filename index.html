@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>小红书图文自动生成器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;700&family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+HK:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="panel">
+        <h1>小红书图文自动生成器</h1>
+        <p class="hint">批量上传背景图或选择内置模板，配合文案一键生成居中排版。</p>
+
+        <label class="field">
+          <span>背景图（可多选）</span>
+          <input id="bgInput" type="file" accept="image/*" multiple />
+        </label>
+
+        <div class="template-block">
+          <div class="template-header">
+            <span>内置模板</span>
+            <div class="template-actions">
+              <button id="selectAllTemplates" type="button" class="ghost small">全选</button>
+              <button id="clearTemplates" type="button" class="ghost small">取消全选</button>
+            </div>
+          </div>
+          <div id="templateGrid" class="template-grid"></div>
+        </div>
+
+        <label class="field">
+          <span>文案（每行一条）</span>
+          <textarea
+            id="textInput"
+            rows="8"
+            placeholder="每行一条文案，自动每 5 个字换行"
+          ></textarea>
+        </label>
+
+        <div class="row">
+          <button id="generateBtn" type="button">生成预览</button>
+          <button id="shuffleBtn" type="button" class="ghost">换一批字体</button>
+          <button id="downloadBtn" type="button" class="ghost">打包 ZIP</button>
+        </div>
+
+        <div class="meta">
+          <span>当前字体：</span>
+          <span id="fontLabel">未生成</span>
+        </div>
+
+        <div class="meta" id="statusLine">等待上传图片与文案</div>
+
+        <p class="note">
+          提示：模板在前、上传在后按顺序匹配；文案不足时会留空。
+        </p>
+      </section>
+
+      <section class="preview">
+        <div class="canvas-wrap">
+          <div id="previewGrid" class="preview-grid"></div>
+          <div id="placeholder" class="placeholder">等待上传背景图</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
