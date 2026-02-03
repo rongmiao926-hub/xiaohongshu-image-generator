@@ -10,61 +10,38 @@ const placeholder = document.getElementById("placeholder");
 const templateGrid = document.getElementById("templateGrid");
 const selectAllTemplatesBtn = document.getElementById("selectAllTemplates");
 const clearTemplatesBtn = document.getElementById("clearTemplates");
+const randomMatchInput = document.getElementById("randomMatch");
+const zipLinkWrap = document.getElementById("zipLinkWrap");
+const zipLink = document.getElementById("zipLink");
 
 const fontPool = [
   "ZCOOL KuaiLe",
-  "ZCOOL XiaoWei",
   "Noto Sans HK",
   "Noto Sans TC",
-  "Noto Serif HK",
   "Noto Sans SC",
 ];
 
 const MAX_CANVAS_EDGE = 1600;
+const LINE_CHAR_LIMIT = 7;
 
 let entries = [];
 const selectedTemplates = new Set();
 const templateItemMap = new Map();
+let currentZipUrl = null;
 
-const templateLibrary = [
-  { name: "IMG_5315.JPG", src: "templates/IMG_5315.JPG" },
-  { name: "IMG_5316.JPG", src: "templates/IMG_5316.JPG" },
-  { name: "IMG_5317.JPG", src: "templates/IMG_5317.JPG" },
-  { name: "IMG_5319.JPG", src: "templates/IMG_5319.JPG" },
-  { name: "IMG_5320.JPG", src: "templates/IMG_5320.JPG" },
-  { name: "IMG_5321.JPG", src: "templates/IMG_5321.JPG" },
-  { name: "IMG_5322.JPG", src: "templates/IMG_5322.JPG" },
-  { name: "IMG_5323.JPG", src: "templates/IMG_5323.JPG" },
-  { name: "IMG_5324.JPG", src: "templates/IMG_5324.JPG" },
-  { name: "IMG_5325.JPG", src: "templates/IMG_5325.JPG" },
-  { name: "IMG_5326.JPG", src: "templates/IMG_5326.JPG" },
-  { name: "IMG_5327.JPG", src: "templates/IMG_5327.JPG" },
-  { name: "IMG_5328.JPG", src: "templates/IMG_5328.JPG" },
-  { name: "IMG_5329.JPG", src: "templates/IMG_5329.JPG" },
-  { name: "IMG_5330.JPG", src: "templates/IMG_5330.JPG" },
-  { name: "IMG_5331.JPG", src: "templates/IMG_5331.JPG" },
-  { name: "IMG_5332.JPG", src: "templates/IMG_5332.JPG" },
-  { name: "IMG_5333.JPG", src: "templates/IMG_5333.JPG" },
-  { name: "IMG_5334.JPG", src: "templates/IMG_5334.JPG" },
-  { name: "IMG_5335.JPG", src: "templates/IMG_5335.JPG" },
-  { name: "IMG_5336.JPG", src: "templates/IMG_5336.JPG" },
-  { name: "IMG_5337.JPG", src: "templates/IMG_5337.JPG" },
-  { name: "IMG_5338.JPG", src: "templates/IMG_5338.JPG" },
-  { name: "IMG_5339.JPG", src: "templates/IMG_5339.JPG" },
-  { name: "IMG_5340.JPG", src: "templates/IMG_5340.JPG" },
-  { name: "IMG_5342.JPG", src: "templates/IMG_5342.JPG" },
-  { name: "IMG_5343.JPG", src: "templates/IMG_5343.JPG" },
-  { name: "IMG_5344.JPG", src: "templates/IMG_5344.JPG" },
-  { name: "IMG_5345.JPG", src: "templates/IMG_5345.JPG" },
-  { name: "IMG_5348.JPG", src: "templates/IMG_5348.JPG" },
-  { name: "IMG_5349.JPG", src: "templates/IMG_5349.JPG" },
-  { name: "IMG_5350.JPG", src: "templates/IMG_5350.JPG" },
-  { name: "IMG_5351.JPG", src: "templates/IMG_5351.JPG" },
-  { name: "IMG_5352.JPG", src: "templates/IMG_5352.JPG" },
-];
+const templateLibrary = window.TEMPLATE_LIBRARY || [];
 
 function pickRandomFont() {
   return fontPool[Math.floor(Math.random() * fontPool.length)];
+}
+
+function shuffleArray(items) {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 function parseLines(text) {
@@ -104,6 +81,19 @@ function refreshStatus() {
   updateStatus(templateCount, uploadCount, copyCount);
 }
 
+function clearZipLink() {
+  if (currentZipUrl) {
+    URL.revokeObjectURL(currentZipUrl);
+    currentZipUrl = null;
+  }
+  if (zipLinkWrap) {
+    zipLinkWrap.hidden = true;
+  }
+  if (zipLink) {
+    zipLink.href = "#";
+  }
+}
+
 function tokenizeText(text) {
   const tokens = [];
   const wordRegex = /[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*/g;
@@ -127,6 +117,11 @@ function tokenizeText(text) {
   return tokens;
 }
 
+function isPunctuation(token) {
+  if (token.length !== 1) return false;
+  return /[,.!?;:、，。！？；：“”‘’（）《》〈〉【】〔〕（）·…—]/.test(token);
+}
+
 function chunkText(text) {
   const tokens = tokenizeText(text);
   const lines = [];
@@ -134,13 +129,26 @@ function chunkText(text) {
   let count = 0;
 
   for (const token of tokens) {
+    const punctuation = isPunctuation(token);
     const tokenLen = token.length;
-    if (count > 0 && count + tokenLen > 5) {
+    if (count === 0 && punctuation && lines.length > 0) {
+      lines[lines.length - 1] += token;
+      continue;
+    }
+    if (count > 0 && count + tokenLen > LINE_CHAR_LIMIT) {
+      if (punctuation) {
+        current += token;
+        count += tokenLen;
+        lines.push(current);
+        current = "";
+        count = 0;
+        continue;
+      }
       lines.push(current);
       current = "";
       count = 0;
     }
-    if (tokenLen > 5 && count === 0) {
+    if (tokenLen > LINE_CHAR_LIMIT && count === 0) {
       lines.push(token);
       continue;
     }
@@ -152,6 +160,51 @@ function chunkText(text) {
     lines.push(current);
   }
   return lines;
+}
+
+function hasRenderableText(text) {
+  return text.replace(/\s+/g, "").length > 0;
+}
+
+function dataUrlToBlob(dataUrl) {
+  const parts = dataUrl.split(",");
+  if (parts.length < 2) return null;
+  const mimeMatch = parts[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : "image/png";
+  const binary = atob(parts[1]);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
+async function canvasToBlobSafe(canvas) {
+  try {
+    if (canvas.toBlob) {
+      return await new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+            return;
+          }
+          try {
+            const dataUrl = canvas.toDataURL("image/png");
+            resolve(dataUrlToBlob(dataUrl));
+          } catch (error) {
+            console.error(error);
+            resolve(null);
+          }
+        }, "image/png");
+      });
+    }
+    const dataUrl = canvas.toDataURL("image/png");
+    return dataUrlToBlob(dataUrl);
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
 }
 
 function fitCanvasToImage(canvas, img) {
@@ -166,9 +219,10 @@ function estimateFontSize(lines, canvas) {
   if (!lines.length) return { size: 42, lineHeight: 54 };
   const padding = canvas.width * 0.08;
   const maxLineWidth = canvas.width - padding * 2;
-  let size = Math.floor(maxLineWidth / 5);
+  let size = Math.floor(maxLineWidth / LINE_CHAR_LIMIT);
   size = Math.max(24, size);
 
+  size = Math.max(18, Math.round(size * 0.7));
   let lineHeight = size * 1.3;
   let totalHeight = lines.length * lineHeight;
   const maxHeight = canvas.height * 0.78;
@@ -187,7 +241,7 @@ async function renderEntry(entry) {
   const lines = chunkText(text);
 
   if (document.fonts?.load) {
-    await document.fonts.load(`700 36px "${font}"`);
+    await document.fonts.load(`400 36px "${font}"`);
   }
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -198,7 +252,7 @@ async function renderEntry(entry) {
   const startY = canvas.height / 2 - ((lines.length - 1) * lineHeight) / 2;
 
   ctx.save();
-  ctx.font = `700 ${size}px "${font}", "Noto Sans SC", sans-serif`;
+  ctx.font = `400 ${size}px "${font}", "Noto Sans SC", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#413F3F";
@@ -325,6 +379,7 @@ function clearPreview() {
   entries = [];
   updateFontLabel();
   refreshStatus();
+  clearZipLink();
 }
 
 function createCard(entry, index) {
@@ -366,11 +421,14 @@ async function buildEntries() {
   updateStatus(templateCount, uploadCount, lines.length);
   previewGrid.innerHTML = "";
   placeholder.style.display = "none";
+  clearZipLink();
 
   try {
-    const images = await Promise.all(sources.map((source) => loadImageFromSource(source)));
+    const shouldShuffle = randomMatchInput?.checked;
+    const sourcesToUse = shouldShuffle ? shuffleArray(sources) : sources;
+    const images = await Promise.all(sourcesToUse.map((source) => loadImageFromSource(source)));
 
-    entries = sources.map((source, index) => {
+    entries = sourcesToUse.map((source, index) => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       const image = images[index];
@@ -388,6 +446,16 @@ async function buildEntries() {
 
       return entry;
     });
+
+    entries = entries.filter((entry) => hasRenderableText(entry.text));
+    if (!entries.length) {
+      previewGrid.innerHTML = "";
+      placeholder.style.display = "grid";
+      statusLine.textContent = "没有包含文字的图片可预览";
+      updateFontLabel();
+      clearZipLink();
+      return;
+    }
 
     entries.forEach((entry, index) => {
       const card = createCard(entry, index);
@@ -440,31 +508,58 @@ async function downloadZip() {
     return;
   }
 
-  const zip = new JSZip();
-  const folder = zip.folder("posters");
+  const entriesToExport = entries.filter((entry) => hasRenderableText(entry.text));
+  if (!entriesToExport.length) {
+    alert("没有包含文字的图片可下载");
+    return;
+  }
 
-  const blobs = await Promise.all(
-    entries.map(
-      (entry) =>
-        new Promise((resolve) => {
-          entry.canvas.toBlob((blob) => resolve(blob), "image/png");
-        })
-    )
-  );
+  try {
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = "打包中...";
+    const zip = new JSZip();
+    const folder = zip.folder("posters");
 
-  blobs.forEach((blob, index) => {
-    if (!blob) return;
-    const baseName = sanitizeBaseName(entries[index].name || `image-${index + 1}`);
-    folder.file(`${baseName}-poster.png`, blob);
-  });
+    const blobResults = await Promise.all(
+      entriesToExport.map(async (entry) => ({
+        name: entry.name,
+        blob: await canvasToBlobSafe(entry.canvas),
+      }))
+    );
 
-  const content = await zip.generateAsync({ type: "blob" });
-  const url = URL.createObjectURL(content);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "xiaohongshu-posters.zip";
-  link.click();
-  URL.revokeObjectURL(url);
+    const validResults = blobResults.filter((item) => item.blob);
+    if (!validResults.length) {
+      alert("图片导出失败，请稍后重试");
+      return;
+    }
+
+    validResults.forEach((item, index) => {
+      const baseName = sanitizeBaseName(item.name || `image-${index + 1}`);
+      folder.file(`${baseName}-poster.png`, item.blob);
+    });
+
+    const content = await zip.generateAsync({ type: "blob", streamFiles: true });
+    clearZipLink();
+    const url = URL.createObjectURL(content);
+    currentZipUrl = url;
+    if (zipLink) {
+      zipLink.href = url;
+      zipLink.download = "xiaohongshu-posters.zip";
+    }
+    if (zipLinkWrap) {
+      zipLinkWrap.hidden = false;
+    }
+    if (zipLink) {
+      zipLink.click();
+    }
+  } catch (error) {
+    console.error(error);
+    const message = error && error.message ? error.message : "未知错误";
+    alert(`打包失败：${message}`);
+  } finally {
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = "打包 ZIP";
+  }
 }
 
 bgInput.addEventListener("change", () => {
@@ -472,10 +567,12 @@ bgInput.addEventListener("change", () => {
   if (!getSources().length) {
     clearPreview();
   }
+  clearZipLink();
 });
 
 textInput.addEventListener("input", () => {
   refreshStatus();
+  clearZipLink();
 });
 
 generateBtn.addEventListener("click", async () => {

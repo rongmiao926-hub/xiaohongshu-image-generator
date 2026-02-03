@@ -1,12 +1,12 @@
 # Xiaohongshu Text-Image Generator
 
-A small web app that batches background images and copy, then renders centered text (5 characters per line) on each image with randomized fonts. It supports built-in templates, multi-upload, and ZIP export.
+A small web app that batches background images and copy, then renders centered text (7 characters per line) on each image with randomized fonts. It supports built-in templates, multi-upload, and ZIP export.
 
 ## Features
 - Batch upload images and batch input copy (one line per image).
 - Built-in template gallery with select all / clear / multi-select.
 - Random font per image from a configurable font pool.
-- Centered layout with automatic line breaks (5 chars per line).
+- Centered layout with automatic line breaks (7 chars per line).
 - English words are kept intact (not split across lines).
 - One-click ZIP export of all generated images.
 
@@ -23,9 +23,9 @@ A small web app that batches background images and copy, then renders centered t
 - If there are fewer copy lines than images, remaining images are left blank.
 
 ## Text Rules
-- Line break every 5 characters.
+- Line break every 7 characters.
 - English words (A-Z, a-z, 0-9, hyphen, apostrophe) are kept intact.
-- If a single English word is longer than 5 characters, it will occupy its own line.
+- If a single English word is longer than 7 characters, it will occupy its own line.
 
 ## Fonts
 - Fonts are loaded from Google Fonts via `index.html`.
@@ -48,4 +48,3 @@ To add new templates:
 ## Notes
 - ZIP export uses JSZip from a CDN (network required).
 - If you want to work fully offline, host the page with a local server and replace CDN assets with local files.
-

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;700&family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+HK:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;700&family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -39,7 +39,7 @@
           <textarea
             id="textInput"
             rows="8"
-            placeholder="每行一条文案，自动每 5 个字换行"
+            placeholder="每行一条文案，自动每 7 个字换行"
           ></textarea>
         </label>
 
@@ -48,6 +48,16 @@
           <button id="shuffleBtn" type="button" class="ghost">换一批字体</button>
           <button id="downloadBtn" type="button" class="ghost">打包 ZIP</button>
         </div>
+
+        <div id="zipLinkWrap" class="zip-link" hidden>
+          <span>下载链接：</span>
+          <a id="zipLink" href="#" download="xiaohongshu-posters.zip">点击下载 ZIP</a>
+        </div>
+
+        <label class="toggle">
+          <input id="randomMatch" type="checkbox" />
+          <span>随机匹配文案与背景图</span>
+        </label>
 
         <div class="meta">
           <span>当前字体：</span>
@@ -70,6 +80,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="templates-data.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
