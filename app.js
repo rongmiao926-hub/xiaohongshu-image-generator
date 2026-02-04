@@ -14,12 +14,7 @@ const randomMatchInput = document.getElementById("randomMatch");
 const zipLinkWrap = document.getElementById("zipLinkWrap");
 const zipLink = document.getElementById("zipLink");
 
-const fontPool = [
-  "ZCOOL KuaiLe",
-  "Noto Sans HK",
-  "Noto Sans TC",
-  "Noto Sans SC",
-];
+const fontPool = [];
 
 const MAX_CANVAS_EDGE = 1600;
 const LINE_CHAR_LIMIT = 7;
@@ -32,6 +27,7 @@ let currentZipUrl = null;
 const templateLibrary = window.TEMPLATE_LIBRARY || [];
 
 function pickRandomFont() {
+  if (!fontPool.length) return "Apple Color Emoji";
   return fontPool[Math.floor(Math.random() * fontPool.length)];
 }
 
@@ -94,31 +90,52 @@ function clearZipLink() {
   }
 }
 
+let graphemeSegmenter = null;
+
+function splitGraphemes(text) {
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    if (!graphemeSegmenter) {
+      graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+    }
+    return Array.from(graphemeSegmenter.segment(text), (segment) => segment.segment);
+  }
+  return Array.from(text);
+}
+
+function graphemeLength(text) {
+  return splitGraphemes(text).length;
+}
+
+function pushNonSpaceGraphemes(text, tokens) {
+  for (const grapheme of splitGraphemes(text)) {
+    if (!/\s/.test(grapheme)) {
+      tokens.push(grapheme);
+    }
+  }
+}
+
 function tokenizeText(text) {
   const tokens = [];
   const wordRegex = /[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*/g;
-  let i = 0;
-  while (i < text.length) {
-    const ch = text[i];
-    if (/\s/.test(ch)) {
-      i += 1;
-      continue;
+  let lastIndex = 0;
+  let match = wordRegex.exec(text);
+  while (match) {
+    const index = match.index;
+    if (index > lastIndex) {
+      pushNonSpaceGraphemes(text.slice(lastIndex, index), tokens);
     }
-    wordRegex.lastIndex = i;
-    const match = wordRegex.exec(text);
-    if (match && match.index === i) {
-      tokens.push(match[0]);
-      i += match[0].length;
-      continue;
-    }
-    tokens.push(ch);
-    i += 1;
+    tokens.push(match[0]);
+    lastIndex = index + match[0].length;
+    match = wordRegex.exec(text);
+  }
+  if (lastIndex < text.length) {
+    pushNonSpaceGraphemes(text.slice(lastIndex), tokens);
   }
   return tokens;
 }
 
 function isPunctuation(token) {
-  if (token.length !== 1) return false;
+  if (graphemeLength(token) !== 1) return false;
   return /[,.!?;:、，。！？；：“”‘’（）《》〈〉【】〔〕（）·…—]/.test(token);
 }
 
@@ -130,7 +147,7 @@ function chunkText(text) {
 
   for (const token of tokens) {
     const punctuation = isPunctuation(token);
-    const tokenLen = token.length;
+    const tokenLen = graphemeLength(token);
     if (count === 0 && punctuation && lines.length > 0) {
       lines[lines.length - 1] += token;
       continue;
@@ -252,7 +269,7 @@ async function renderEntry(entry) {
   const startY = canvas.height / 2 - ((lines.length - 1) * lineHeight) / 2;
 
   ctx.save();
-  ctx.font = `400 ${size}px "${font}", "Noto Sans SC", sans-serif`;
+  ctx.font = `400 ${size}px "${font}", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#413F3F";
