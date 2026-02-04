@@ -1,4 +1,5 @@
 # Xiaohongshu Text-Image Generator
+English | [简体中文](README.zh-CN.md)
 
 A small web app that batches background images and copy, then renders centered text (7 characters per line) on each image with randomized fonts. It supports built-in templates, multi-upload, and ZIP export.
 
