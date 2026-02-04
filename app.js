@@ -18,6 +18,7 @@ const fontPool = [];
 
 const MAX_CANVAS_EDGE = 1600;
 const LINE_CHAR_LIMIT = 7;
+const FORCE_PHRASES = ["yomoa邀请码"];
 
 let entries = [];
 const selectedTemplates = new Set();
@@ -91,6 +92,25 @@ function clearZipLink() {
 }
 
 let graphemeSegmenter = null;
+let cachedTokenRegex = null;
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getTokenRegex() {
+  if (cachedTokenRegex) return cachedTokenRegex;
+  const base = "[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*";
+  const phrases = FORCE_PHRASES.map((phrase) => phrase && phrase.trim())
+    .filter(Boolean)
+    .map(escapeRegExp);
+  if (phrases.length) {
+    cachedTokenRegex = new RegExp(`${phrases.join("|")}|${base}`, "g");
+    return cachedTokenRegex;
+  }
+  cachedTokenRegex = new RegExp(base, "g");
+  return cachedTokenRegex;
+}
 
 function splitGraphemes(text) {
   if (typeof Intl !== "undefined" && Intl.Segmenter) {
@@ -116,7 +136,8 @@ function pushNonSpaceGraphemes(text, tokens) {
 
 function tokenizeText(text) {
   const tokens = [];
-  const wordRegex = /[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*/g;
+  const wordRegex = getTokenRegex();
+  wordRegex.lastIndex = 0;
   let lastIndex = 0;
   let match = wordRegex.exec(text);
   while (match) {
